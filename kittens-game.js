@@ -12,8 +12,27 @@
 
 (function() {
     'use strict';
+
     class Cheat {
         constructor() {
+            this.log = {
+                debug: (msg) => {
+                    if (this.config.logLevel >= 1) {
+                        console.log(`ERROR: ${msg}`);
+                    }
+                },
+                debug: (msg) => {
+                    if (this.config.logLevel >= 2) {
+                        console.log(`DEBUG: ${msg}`);
+                    }
+                },
+                info: (msg) => {
+                    if (this.config.logLevel >= 3) {
+                        console.log(`INFO: ${msg}`);
+                    }
+                }
+            }
+            this.config.logLevel = 1;
             this.resources = {};
             this.loadConfig();
             // this.getResources(game);
@@ -31,6 +50,7 @@
         }
         saveConfig() {
             localStorage.removeItem('kitCheat');
+            this.config.logLevel = 1;
             localStorage.setItem('kitCheat', JSON.stringify(this.config));
         }
         getResources(game) {
@@ -105,40 +125,40 @@
 
     function overThreshold(resource, threshold) {
         var adj = cheat.resources[resource].maxValue * threshold;
-        // console.log(`Comparing ${cheat.resources[resource].maxValue} * ${threshold} (${adj}) to ${cheat.resources[resource].value} of ${resource}`);
         if (cheat.resources[resource].maxValue == 0) {
             return false;
         }
-        if (cheat.resources[resource].value >= cheat.resources[resource].maxValue * threshold) {
+        if (cheat.resources[resource].value >= adj) {
             return true;
         }
         return false
     }
 
     function checkResources() {
+        craft('all', 'parchment');
         if (overThreshold('catnip', 0.8)) {
-            console.log('Crafting wood.');
+            cheat.log.debug('Crafting wood.');
             craft('many', 'wood');
         }
         if (overThreshold('wood', 0.8)) {
-            console.log('Crafting beams.');
+            cheat.log.debug('Crafting beams.');
             craft('many', 'beam');
         }
         if (overThreshold('minerals', 0.8)) {
-            console.log('Crafting slabs.');
+            cheat.log.debug('Crafting slabs.');
             craft('many', 'slab');
         }
         if (overThreshold('iron', 0.8) || overThreshold('coal', 0.8)) {
-            console.log('Burning iron and coal.');
+            cheat.log.debug('Burning iron and coal.');
             craft('all', 'steel');
             craft('all', 'plate');
         }
         if (overThreshold('culture', 0.75)) {
-            console.log('Kittens are too cultured, extracting yoghurt.');
+            cheat.log.debug('Kittens are too cultured, extracting yoghurt.');
             craft('one', 'manuscript');
         }
-        if (overThreshold('science', 0.99)) {
-            console.log('Kittens are too scientific, extracting brain juice.');
+        if (overThreshold('science', 0.75)) {
+            cheat.log.debug('Kittens are too scientific, extracting brain juice.');
             craft('one', 'compendium');
             craft('one', 'blueprint');
         }
@@ -170,8 +190,8 @@
         if (log) {
             $('#clearLogHref').click();
         }
-        window.setTimeout(kitcheat, 5000);
+        window.setTimeout(kitcheat, 2000);
     }
 
-    window.setTimeout(kitcheat, 5000);
+    window.setTimeout(kitcheat, 2000);
 })();
