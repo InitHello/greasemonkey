@@ -6,17 +6,18 @@
 // @author       InitHello
 // @match        http://bloodrizer.ru/games/kittens/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
+// @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js
 // @grant        none
 // ==/UserScript==
 
 
-(function() {
+$(function() {
     'use strict';
 
     class Cheat {
         constructor() {
             this.log = {
-                debug: (msg) => {
+                error: (msg) => {
                     if (this.config.logLevel >= 1) {
                         console.log(`ERROR: ${msg}`);
                     }
@@ -32,25 +33,25 @@
                     }
                 }
             }
-            this.config.logLevel = 1;
             this.resources = {};
+            this.managed_resources = ['hunters', 'astronomers', 'log', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
             this.loadConfig();
-            // this.getResources(game);
         }
         loadConfig() {
             if (localStorage.getItem('kitCheat') !== null) {
                 this.config = JSON.parse(localStorage.getItem('kitCheat'));
             }
             else {
-                this.config = {hunters: {enabled: false, class: 'chtoff'},
-                               astro: {enabled: false, class: 'chtoff'},
-                               log: {enabled: false, class: 'chtoff'}};
+                this.config = {logLevel: 0, resource_management: {}};
+                for (var resource in this.managed_resources) {
+                    this.config.resource_management[this.managed_resources[resource]] = {manage: false, threshold: 80};
+                }
                 this.saveConfig();
             }
+            this.log.debug({config: this.config});
         }
         saveConfig() {
             localStorage.removeItem('kitCheat');
-            this.config.logLevel = 1;
             localStorage.setItem('kitCheat', JSON.stringify(this.config));
         }
         getResources(game) {
@@ -62,69 +63,93 @@
                 this.resources[name] = resource;
             }
         }
-        getCraftLinks() {
-            rootnode = $('#leftColumnViewport').firstChild();
+        getCraftTables() {
+            var craftTable = $('#fastPraiseContainer').next().find('.res-row.craft');
+            var craftTables = {};
+            for (var idx = 0; idx <= craftTable.length; idx++) {
+                var line = craftTable[idx];
+                var craftlinks = $(line).find('.res-cell.craft-link');
+                var resname = $($(line).children()[0]).text();
+                if (resname == '') {
+                    continue;
+                }
+                if (craftlinks.length != 4) {
+                    continue;
+                }
+                var craft_selectors = {one: craftlinks[0], some: craftlinks[1], many: craftlinks[2], all: craftlinks[3]};
+                craftTables[resname] = craft_selectors;
+            }
+            return craftTables;
         }
         findRow(resource) {
-            var craftTable = $('#fastPraiseContainer').next().find('.res-row.craft');
-            for (var i = 0; i <= craftTable.length; i++) {
-                var row = $(craftTable[i]).children();
-                var resname = row[0].lastChild.data;
-                var resvalue = row[1];
-                var craftone = row[2].lastChild;
-                var craftsome = row[3].lastChild;
-                var craftmany = row[4].lastChild;
-                var craftall = row[5].lastChild;
-                if (resname == resource) {
-                    return {one: craftone, some: craftsome, many: craftmany, all: craftall}
-                }
+            if (this.craftTables.hasOwnProperty(resource)) {
+                return this.craftTables[resource];
             }
         }
     }
-    // Your code here...
-    var daddy = $('#topBar');
-    var child = $('#kitCheat');
-    if (!child.length) {
-        var cheat = new Cheat();
-        var css = $(['<style type="text/css">#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; } a.chtoff { color: red; } ',
-                     'a.chton { color: green; } a.cheats { border: 1px solid black; margin: 3px; }</style>'].join(''));
-        var elm = $(['<div id="kitCheat">',
-                     `<a href="#" id="toggleHunters" data-item="hunters" class="cheats ${cheat.config.hunters.class} hunters">Hunters</a>`,
-                     `<a href="#" id="toggleAstro" data-item="astro" class="cheats ${cheat.config.astro.class} astro">Astronomers</a>`,
-                     `<a href="#" id="toggleLog" data-item="log" class="cheats ${cheat.config.log.class} log">Log</a>`,
-                     '</div>'].join(''));
-        $(document.body).append(css);
-        daddy.append(elm);
+
+    function showCheats() {
+        var cheat_contents = [];
+        for (var idx in cheat.managed_resources) {
+            var resource = cheat.managed_resources[idx];
+            if (cheat.config.resource_management.hasOwnProperty(resource)) {
+                var enabled = cheat.config.resource_management[resource].manage ? 'on' : 'off';
+                var chtclass = cheat.config.resource_management[resource].manage ? ' bldEnabled' : '';
+                var label = resource[0].toUpperCase() + resource.slice(1);
+                var cap = cheat.config.resource_management[resource].threshold;
+                cheat_contents = cheat_contents.concat(['<div class="bldGroupContainer">',
+                         `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
+                         '<div class="btnContent" title="">',
+                         `<input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" />`,
+                         `<span>${label}</span>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
+                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
+                         '</div>',
+                         '</div>']);
+            }
+        }
+        var elm = $(cheat_contents.join(''));
+        var tabContents = $('#gameContainerId').find('div.tabInner');
+        tabContents.html(elm);
         $('.cheats').on('click', (ev) => {
             var elm = $(ev.currentTarget);
             var item = elm.attr('data-item');
-            var cont = $('#kitCheat');
-            var isactive = cheat.config[item].enabled;
-            if (isactive) {
-                cheat.config[item].enabled = false;
-                cheat.config[item].class = 'chtoff';
+            var isactive = cheat.config.resource_management[item];
+            if (isactive.manage) {
+                $('#cht-' + item).removeClass('bldEnabled');
+                isactive.manage = false;
+                cheat.config.resource_management[item] = isactive;
                 cheat.saveConfig();
-                elm.removeClass('chton')
-                elm.addClass('chtoff')
+                elm.html('off')
             }
             else {
-                cheat.config[item].enabled = true;
-                cheat.config[item].class = 'chton';
+                $('#cht-' + item).addClass('bldEnabled');
+                isactive.manage = true;
+                cheat.config.resource_management[item] = isactive;
                 cheat.saveConfig();
-                elm.removeClass('chtoff')
-                elm.addClass('chton')
-
+                elm.html('on')
             }
         });
     }
 
     function craft(number, item) {
-        var craftbuttons = cheat.findRow(item);
-        craftbuttons[number].click();
+        var craftTables = cheat.getCraftTables();
+        if (craftTables.hasOwnProperty(item)) {
+            $(craftTables[item][number]).click();
+        }
     }
 
-    function overThreshold(resource, threshold) {
-        var adj = cheat.resources[resource].maxValue * threshold;
+    function overThreshold(resource) {
+        cheat.getResources(game);
+        if (!cheat.config.resource_management.hasOwnProperty(resource)) {
+            cheat.config.resource_management[resource] = {manage: false, threshold: 80};
+            cheat.saveConfig();
+        }
+        if (!cheat.config.resource_management[resource].manage) {
+            return false;
+        }
+        var management = cheat.config.resource_management[resource];
+        var adj = cheat.resources[resource].maxValue * (management.threshold / 100);
         if (cheat.resources[resource].maxValue == 0) {
             return false;
         }
@@ -135,45 +160,75 @@
     }
 
     function checkResources() {
+        var many = ['catnip', 'wood', 'minerals']
+        var mappings = {catnip: {wood: 'many'},
+                        wood: {beam: 'many'},
+                        minerals: {slab: 'many'},
+                        iron: {steel: 'all', plate: 'all'},
+                        coal: {steel: 'all'},
+                        culture: {manuscript: 'one'},
+                        science: {compendium: 'one', blueprint: 'one'}};
+        for (var resource in mappings) {
+            var over = overThreshold(resource);
+            if (over) {
+                for (var product in mappings[resource]) {
+                    craft(mappings[resource][product], product);
+                }
+            }
+        }
         craft('all', 'parchment');
-        if (overThreshold('catnip', 0.8)) {
-            cheat.log.debug('Crafting wood.');
-            craft('many', 'wood');
-        }
-        if (overThreshold('wood', 0.8)) {
-            cheat.log.debug('Crafting beams.');
-            craft('many', 'beam');
-        }
-        if (overThreshold('minerals', 0.8)) {
-            cheat.log.debug('Crafting slabs.');
-            craft('many', 'slab');
-        }
-        if (overThreshold('iron', 0.8) || overThreshold('coal', 0.8)) {
-            cheat.log.debug('Burning iron and coal.');
-            craft('all', 'steel');
-            craft('all', 'plate');
-        }
-        if (overThreshold('culture', 0.75)) {
-            cheat.log.debug('Kittens are too cultured, extracting yoghurt.');
-            craft('one', 'manuscript');
-        }
-        if (overThreshold('science', 0.75)) {
-            cheat.log.debug('Kittens are too scientific, extracting brain juice.');
-            craft('one', 'compendium');
-            craft('one', 'blueprint');
-        }
-        if (overThreshold('faith', 0.90)) {
+        if (overThreshold('faith')) {
             $('#fastPraiseContainer:first-child').click();
         }
     }
 
+    var cheat = new Cheat();
+
+    function initPage(cheat, game) {
+            var tab = ['<span> | </span>',
+                       '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
+            var tabRow = $('#gameContainerId').find('div.tabsContainer');
+            tabRow.append($(tab));
+            $('#kitCheats').on('click', () => {
+                showCheats();
+            });
+            var css = $(['<style type="text/css">',
+                         '#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; }',
+                         '#custom-handle { ',
+                         'width: 3em; ',
+                         'height: 1.6em; ',
+                         'top: 50%; ',
+                         'margin-top: -.8em; ',
+                         'text-align: center; ',
+                         'line-height: 1.6em; ',
+                         '}',
+                         '.resourcecap { width: 2em;',
+                         'position: relative;',
+                         'left: -55px;',
+                         'height: 12px; ',
+                         'margin-top: 0px; ',
+                         'margin-bottom: 0px; ',
+                         'margin-right: auto; ',
+                         'margin-left: 2px; ',
+                         'border: none; ',
+                         '}',
+                         '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
+                         '</style>'].join(''));
+            $(document.body).append(css);
+    }
+
     function kitcheat() {
         cheat.getResources(game);
+        var child = $('#kitCheats');
+        if (!child.length) {
+            initPage(cheat, game);
+            cheat.craftTables = cheat.getCraftTables();
+        }
         var craftbuttons = cheat.findRow('wood');
         var controller = $('#kitCheat');
-        var hunters = cheat.config.hunters.enabled;
-        var astro = cheat.config.astro.enabled;
-        var log = cheat.config.log.enabled;
+        var hunters = cheat.config.resource_management.hunters.manage;
+        var astro = cheat.config.resource_management.astronomers.manage;
+        var log = cheat.config.resource_management.log.manage;
         checkResources();
         if (hunters) {
             var huntbtn = $('#fastHuntContainerCount');
@@ -194,4 +249,4 @@
     }
 
     window.setTimeout(kitcheat, 2000);
-})();
+});
