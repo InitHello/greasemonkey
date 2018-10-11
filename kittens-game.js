@@ -13,85 +13,6 @@
 
 $(function() {
     'use strict';
-
-    class Cheat {
-        constructor() {
-            this.log = {
-                error: (msg) => {
-                    if (this.config.logLevel >= 1) {
-                        console.log(`ERROR: ${msg}`);
-                    }
-                },
-                debug: (msg) => {
-                    if (this.config.logLevel >= 2) {
-                        console.log(`DEBUG: ${msg}`);
-                    }
-                },
-                info: (msg) => {
-                    if (this.config.logLevel >= 3) {
-                        console.log(`INFO: ${msg}`);
-                    }
-                }
-            }
-            this.resources = {};
-            this.capless_resources = ['hunters', 'astronomers', 'log']
-            this.managed_resources = ['science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
-            this.loadConfig();
-        }
-        loadConfig() {
-            if (localStorage.getItem('kitCheat') !== null) {
-                this.config = JSON.parse(localStorage.getItem('kitCheat'));
-            }
-            else {
-                this.config = {logLevel: 0, resource_management: {}};
-                for (var resource in this.capless_resources) {
-                    this.config.resource_management[this.capless_resources[resource]] = {manage: false};
-                }
-                for (var resource in this.managed_resources) {
-                    this.config.resource_management[this.managed_resources[resource]] = {manage: false, threshold: 80};
-                }
-                this.saveConfig();
-            }
-            this.log.debug({config: this.config});
-        }
-        saveConfig() {
-            localStorage.removeItem('kitCheat');
-            localStorage.setItem('kitCheat', JSON.stringify(this.config));
-        }
-        getResources(game) {
-            var resourcehash;
-            var resources = game.resPool.resources;
-            for (var resourceid in resources) {
-                var resource = game.resPool.resources[resourceid];
-                name = resource.name;
-                this.resources[name] = resource;
-            }
-        }
-        getCraftTables() {
-            var craftTable = $('#fastPraiseContainer').next().find('.res-row.craft');
-            var craftTables = {};
-            for (var idx = 0; idx <= craftTable.length; idx++) {
-                var line = craftTable[idx];
-                var craftlinks = $(line).find('.res-cell.craft-link');
-                var resname = $($(line).children()[0]).text();
-                if (resname == '') {
-                    continue;
-                }
-                if (craftlinks.length != 4) {
-                    continue;
-                }
-                var craft_selectors = {one: craftlinks[0], some: craftlinks[1], many: craftlinks[2], all: craftlinks[3]};
-                craftTables[resname] = craft_selectors;
-            }
-            return craftTables;
-        }
-        findRow(resource) {
-            if (this.craftTables.hasOwnProperty(resource)) {
-                return this.craftTables[resource];
-            }
-        }
-    }
-
     function showCheats() {
         var cheat_contents = ['<div class="bldGroupContainer">'];
         for (var idx in cheat.capless_resources) {
@@ -133,6 +54,12 @@ $(function() {
         var elm = $(cheat_contents.join(''));
         var tabContents = $('#gameContainerId').find('div.tabInner');
         tabContents.html(elm);
+        $('.resourcecap').on('change', ev => {
+            var elm = $(ev.currentTarget);
+            var item = elm.attr('data-resource');
+            var newvalue = parseInt(elm.val());
+            cheat.setCap(item, newvalue);
+        });
         $('.cheats').on('click', (ev) => {
             var elm = $(ev.currentTarget);
             var item = elm.attr('data-item');
@@ -172,9 +99,6 @@ $(function() {
         }
         var management = cheat.config.resource_management[resource];
         var adj = cheat.resources[resource].maxValue * (management.threshold / 100);
-        if (cheat.resources[resource].maxValue == 0) {
-            return false;
-        }
         if (cheat.resources[resource].value >= adj) {
             return true;
         }
@@ -182,7 +106,6 @@ $(function() {
     }
 
     function checkResources() {
-        var many = ['catnip', 'wood', 'minerals']
         var mappings = {catnip: {wood: 'many'},
                         wood: {beam: 'many'},
                         minerals: {slab: 'many'},
@@ -207,37 +130,36 @@ $(function() {
     var cheat = new Cheat();
 
     function initPage(cheat, game) {
-            var tab = ['<span> | </span>',
-                       '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
-            var tabRow = $('#gameContainerId').find('div.tabsContainer');
-            tabRow.append($(tab));
-            $('#kitCheats').on('click', () => {
-                showCheats();
-            });
-            var css = $(['<style type="text/css">',
-                         '#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; }',
-                         '#custom-handle { ',
-                         'width: 3em; ',
-                         'height: 1.6em; ',
-                         'top: 50%; ',
-                         'margin-top: -.8em; ',
-                         'text-align: center; ',
-                         'line-height: 1.6em; ',
-                         '}',
-                         '.resourcecap { width: 2em;',
-                         'height: 12px; ',
-                         'border: none; ',
-                         '}',
-                         '.cheatcap {',
-                         'width: 36px;',
-                         '}',
-                         '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
-                         '</style>'].join(''));
-            $(document.body).append(css);
+        var tab = ['<span> | </span>',
+                   '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
+        var tabRow = $('#gameContainerId').find('div.tabsContainer');
+        tabRow.append($(tab));
+        $('#kitCheats').on('click', () => {
+            showCheats();
+        });
+        var css = $(['<style type="text/css">',
+                     '#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; }',
+                     '#custom-handle { ',
+                     'width: 3em; ',
+                     'height: 1.6em; ',
+                     'top: 50%; ',
+                     'margin-top: -.8em; ',
+                     'text-align: center; ',
+                     'line-height: 1.6em; ',
+                     '}',
+                     '.resourcecap { width: 2em;',
+                     'height: 12px; ',
+                     'border: none; ',
+                     '}',
+                     '.cheatcap {',
+                     'width: 36px;',
+                     '}',
+                     '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
+                     '</style>'].join(''));
+        $(document.body).append(css);
     }
 
     function kitcheat() {
-        cheat.getResources(game);
         var child = $('#kitCheats');
         if (!child.length) {
             initPage(cheat, game);
@@ -267,5 +189,101 @@ $(function() {
         window.setTimeout(kitcheat, 250);
     }
 
-    window.setTimeout(kitcheat, 250);
+    window.setTimeout(kitcheat, 2000);
 });
+
+class Cheat {
+    constructor() {
+        this.log = {
+            error: (msg) => {
+                if (this.config.logLevel >= 1) {
+                    console.log(`ERROR: ${msg}`);
+                }
+            },
+            debug: (msg) => {
+                if (this.config.logLevel >= 2) {
+                    console.log(`DEBUG: ${msg}`);
+                }
+            },
+            info: (msg) => {
+                if (this.config.logLevel >= 3) {
+                    console.log(`INFO: ${msg}`);
+                }
+            }
+        }
+        this.resources = {};
+        this.capless_resources = ['hunters', 'astronomers', 'log']
+        this.managed_resources = ['furs', 'faith', 'science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
+        this.loadConfig();
+    }
+
+    loadConfig() {
+        if (localStorage.getItem('kitCheat') !== null) {
+            this.config = JSON.parse(localStorage.getItem('kitCheat'));
+        }
+        else {
+            this.config = {logLevel: 0, resource_management: {}};
+            for (var resource in this.capless_resources) {
+                this.config.resource_management[this.capless_resources[resource]] = {manage: false};
+            }
+            for (var resource in this.managed_resources) {
+                this.config.resource_management[this.managed_resources[resource]] = {manage: false, threshold: 80};
+            }
+            this.saveConfig();
+        }
+        this.log.debug({config: this.config});
+    }
+
+    saveConfig() {
+        localStorage.removeItem('kitCheat');
+        localStorage.setItem('kitCheat', JSON.stringify(this.config));
+    }
+
+    getResources(game) {
+        var resourcehash;
+        var resources = game.resPool.resources;
+        for (var resourceid in resources) {
+            var resource = game.resPool.resources[resourceid];
+            name = resource.name;
+            this.resources[name] = resource;
+        }
+    }
+
+    setCap(resource, cap) {
+        if (this.config.resource_management.hasOwnProperty(resource)) {
+            if (this.config.resource_management[resource].hasOwnProperty('threshold')) {
+                this.config.resource_management[resource].threshold = cap;
+                this.saveConfig();
+            }
+            else {
+                this.config.resource_management[resource] = {manage: false, threshold: cap};
+            }
+        }
+    }
+
+    getCraftTables() {
+        var craftTable = $('#fastPraiseContainer').next().find('.res-row.craft');
+        var craftTables = {};
+        for (var idx = 0; idx <= craftTable.length; idx++) {
+            var line = craftTable[idx];
+            var craftlinks = $(line).find('.res-cell.craft-link');
+            var resname = $($(line).children()[0]).text();
+            if (resname == '') {
+                continue;
+            }
+            if (craftlinks.length != 4) {
+                continue;
+            }
+            var craft_selectors = {one: craftlinks[0], some: craftlinks[1], many: craftlinks[2], all: craftlinks[3]};
+            craftTables[resname] = craft_selectors;
+        }
+        return craftTables;
+    }
+ 
+    findRow(resource) {
+        if (this.craftTables.hasOwnProperty(resource)) {
+            return this.craftTables[resource];
+        }
+    }
+}
+
