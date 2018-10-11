@@ -34,7 +34,8 @@ $(function() {
                 }
             }
             this.resources = {};
-            this.managed_resources = ['hunters', 'astronomers', 'log', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
+            this.capless_resources = ['hunters', 'astronomers', 'log']
+            this.managed_resources = ['science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
             this.loadConfig();
         }
         loadConfig() {
@@ -43,6 +44,9 @@ $(function() {
             }
             else {
                 this.config = {logLevel: 0, resource_management: {}};
+                for (var resource in this.capless_resources) {
+                    this.config.resource_management[this.capless_resources[resource]] = {manage: false};
+                }
                 for (var resource in this.managed_resources) {
                     this.config.resource_management[this.managed_resources[resource]] = {manage: false, threshold: 80};
                 }
@@ -89,7 +93,23 @@ $(function() {
     }
 
     function showCheats() {
-        var cheat_contents = [];
+        var cheat_contents = ['<div class="bldGroupContainer">'];
+        for (var idx in cheat.capless_resources) {
+            var resource = cheat.capless_resources[idx];
+            if (cheat.config.resource_management.hasOwnProperty(resource)) {
+                var enabled = cheat.config.resource_management[resource].manage ? 'on' : 'off';
+                var chtclass = cheat.config.resource_management[resource].manage ? ' bldEnabled' : '';
+                var label = resource[0].toUpperCase() + resource.slice(1);
+                cheat_contents = cheat_contents.concat([
+                         `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
+                         '<div class="btnContent" title="">',
+                         `<span>${label}</span>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
+                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
+                         '</div></div>']);
+            }
+        }
         for (var idx in cheat.managed_resources) {
             var resource = cheat.managed_resources[idx];
             if (cheat.config.resource_management.hasOwnProperty(resource)) {
@@ -97,17 +117,19 @@ $(function() {
                 var chtclass = cheat.config.resource_management[resource].manage ? ' bldEnabled' : '';
                 var label = resource[0].toUpperCase() + resource.slice(1);
                 var cap = cheat.config.resource_management[resource].threshold;
-                cheat_contents = cheat_contents.concat(['<div class="bldGroupContainer">',
+                cheat_contents = cheat_contents.concat([
                          `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
                          '<div class="btnContent" title="">',
-                         `<input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" />`,
                          `<span>${label}</span>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
+                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
+                         `<div style="float: right;"><input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" /></div>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
                          `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
-                         '</div>',
-                         '</div>']);
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
+                         '</div></div>']);
             }
         }
+        cheat_contents.push('</div>');
         var elm = $(cheat_contents.join(''));
         var tabContents = $('#gameContainerId').find('div.tabInner');
         tabContents.html(elm);
@@ -167,7 +189,8 @@ $(function() {
                         iron: {steel: 'all', plate: 'all'},
                         coal: {steel: 'all'},
                         culture: {manuscript: 'one'},
-                        science: {compendium: 'one', blueprint: 'one'}};
+                        science: {compendium: 'one', blueprint: 'one'},
+                        furs: {parchment: 'all'}};
         for (var resource in mappings) {
             var over = overThreshold(resource);
             if (over) {
@@ -176,7 +199,6 @@ $(function() {
                 }
             }
         }
-        craft('all', 'parchment');
         if (overThreshold('faith')) {
             $('#fastPraiseContainer:first-child').click();
         }
@@ -203,14 +225,11 @@ $(function() {
                          'line-height: 1.6em; ',
                          '}',
                          '.resourcecap { width: 2em;',
-                         'position: relative;',
-                         'left: -55px;',
                          'height: 12px; ',
-                         'margin-top: 0px; ',
-                         'margin-bottom: 0px; ',
-                         'margin-right: auto; ',
-                         'margin-left: 2px; ',
                          'border: none; ',
+                         '}',
+                         '.cheatcap {',
+                         'width: 36px;',
                          '}',
                          '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
                          '</style>'].join(''));
@@ -245,8 +264,8 @@ $(function() {
         if (log) {
             $('#clearLogHref').click();
         }
-        window.setTimeout(kitcheat, 2000);
+        window.setTimeout(kitcheat, 250);
     }
 
-    window.setTimeout(kitcheat, 2000);
+    window.setTimeout(kitcheat, 250);
 });
