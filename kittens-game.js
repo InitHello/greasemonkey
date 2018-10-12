@@ -6,190 +6,18 @@
 // @author       InitHello
 // @match        http://bloodrizer.ru/games/kittens/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
-// @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js
+// @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js#sha256=VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=
 // @grant        none
 // ==/UserScript==
 
+let $ = window.jQuery;
 
 $(function() {
     'use strict';
-    function showCheats() {
-        var cheat_contents = ['<div class="bldGroupContainer">'];
-        for (var idx in cheat.capless_resources) {
-            var resource = cheat.capless_resources[idx];
-            if (cheat.config.resource_management.hasOwnProperty(resource)) {
-                var enabled = cheat.config.resource_management[resource].manage ? 'on' : 'off';
-                var chtclass = cheat.config.resource_management[resource].manage ? ' bldEnabled' : '';
-                var label = resource[0].toUpperCase() + resource.slice(1);
-                cheat_contents = cheat_contents.concat([
-                         `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
-                         '<div class="btnContent" title="">',
-                         `<span>${label}</span>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
-                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
-                         '</div></div>']);
-            }
-        }
-        for (var idx in cheat.managed_resources) {
-            var resource = cheat.managed_resources[idx];
-            if (cheat.config.resource_management.hasOwnProperty(resource)) {
-                var enabled = cheat.config.resource_management[resource].manage ? 'on' : 'off';
-                var chtclass = cheat.config.resource_management[resource].manage ? ' bldEnabled' : '';
-                var label = resource[0].toUpperCase() + resource.slice(1);
-                var cap = cheat.config.resource_management[resource].threshold;
-                cheat_contents = cheat_contents.concat([
-                         `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
-                         '<div class="btnContent" title="">',
-                         `<span>${label}</span>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
-                         `<div style="float: right;"><input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" /></div>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
-                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
-                         '</div></div>']);
-            }
-        }
-        cheat_contents.push('</div>');
-        var elm = $(cheat_contents.join(''));
-        var tabContents = $('#gameContainerId').find('div.tabInner');
-        tabContents.html(elm);
-        $('.resourcecap').on('change', ev => {
-            var elm = $(ev.currentTarget);
-            var item = elm.attr('data-resource');
-            var newvalue = parseInt(elm.val());
-            cheat.setCap(item, newvalue);
-        });
-        $('.cheats').on('click', (ev) => {
-            var elm = $(ev.currentTarget);
-            var item = elm.attr('data-item');
-            var isactive = cheat.config.resource_management[item];
-            if (isactive.manage) {
-                $('#cht-' + item).removeClass('bldEnabled');
-                isactive.manage = false;
-                cheat.config.resource_management[item] = isactive;
-                cheat.saveConfig();
-                elm.html('off')
-            }
-            else {
-                $('#cht-' + item).addClass('bldEnabled');
-                isactive.manage = true;
-                cheat.config.resource_management[item] = isactive;
-                cheat.saveConfig();
-                elm.html('on')
-            }
-        });
-    }
-
-    function craft(number, item) {
-        var craftTables = cheat.getCraftTables();
-        if (craftTables.hasOwnProperty(item)) {
-            $(craftTables[item][number]).click();
-        }
-    }
-
-    function overThreshold(resource) {
-        cheat.getResources(game);
-        if (!cheat.config.resource_management.hasOwnProperty(resource)) {
-            cheat.config.resource_management[resource] = {manage: false, threshold: 80};
-            cheat.saveConfig();
-        }
-        if (!cheat.config.resource_management[resource].manage) {
-            return false;
-        }
-        var management = cheat.config.resource_management[resource];
-        var adj = cheat.resources[resource].maxValue * (management.threshold / 100);
-        if (cheat.resources[resource].value >= adj) {
-            return true;
-        }
-        return false
-    }
-
-    function checkResources() {
-        var mappings = {catnip: {wood: 'many'},
-                        wood: {beam: 'many'},
-                        minerals: {slab: 'many'},
-                        iron: {steel: 'all', plate: 'all'},
-                        coal: {steel: 'all'},
-                        culture: {manuscript: 'one'},
-                        science: {compendium: 'one', blueprint: 'one'},
-                        furs: {parchment: 'all'}};
-        for (var resource in mappings) {
-            var over = overThreshold(resource);
-            if (over) {
-                for (var product in mappings[resource]) {
-                    craft(mappings[resource][product], product);
-                }
-            }
-        }
-        if (overThreshold('faith')) {
-            $('#fastPraiseContainer:first-child').click();
-        }
-    }
 
     var cheat = new Cheat();
 
-    function initPage(cheat, game) {
-        var tab = ['<span> | </span>',
-                   '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
-        var tabRow = $('#gameContainerId').find('div.tabsContainer');
-        tabRow.append($(tab));
-        $('#kitCheats').on('click', () => {
-            showCheats();
-        });
-        var css = $(['<style type="text/css">',
-                     '#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; }',
-                     '#custom-handle { ',
-                     'width: 3em; ',
-                     'height: 1.6em; ',
-                     'top: 50%; ',
-                     'margin-top: -.8em; ',
-                     'text-align: center; ',
-                     'line-height: 1.6em; ',
-                     '}',
-                     '.resourcecap { width: 2em;',
-                     'height: 12px; ',
-                     'border: none; ',
-                     '}',
-                     '.cheatcap {',
-                     'width: 36px;',
-                     '}',
-                     '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
-                     '</style>'].join(''));
-        $(document.body).append(css);
-    }
-
-    function kitcheat() {
-        var child = $('#kitCheats');
-        if (!child.length) {
-            initPage(cheat, game);
-            cheat.craftTables = cheat.getCraftTables();
-        }
-        var craftbuttons = cheat.findRow('wood');
-        var controller = $('#kitCheat');
-        var hunters = cheat.config.resource_management.hunters.manage;
-        var astro = cheat.config.resource_management.astronomers.manage;
-        var log = cheat.config.resource_management.log.manage;
-        checkResources();
-        if (hunters) {
-            var huntbtn = $('#fastHuntContainerCount');
-            if (huntbtn.length > 0) {
-                huntbtn.click();
-            }
-        }
-        if (astro) {
-            var astrobtn = $('#observeBtn');
-            if (astrobtn.length > 0) {
-                astrobtn.click();
-            }
-        }
-        if (log) {
-            $('#clearLogHref').click();
-        }
-        window.setTimeout(kitcheat, 250);
-    }
-
-    window.setTimeout(kitcheat, 2000);
+    window.setTimeout(cheat.cheatLoop, 2500);
 });
 
 class Cheat {
@@ -212,9 +40,81 @@ class Cheat {
             }
         }
         this.resources = {};
-        this.capless_resources = ['hunters', 'astronomers', 'log']
-        this.managed_resources = ['furs', 'faith', 'science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
+        this.capless_resources = ['hunters', 'astronomers', 'log', 'furs']
+        this.managed_resources = ['faith', 'science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
         this.loadConfig();
+    }
+
+    checkResources() {
+        let products = {catnip: ['wood'],
+                        wood: ['beam'],
+                        minerals: ['slab'],
+                        iron: ['steel', 'plate'],
+                        coal: ['steel'],
+                        culture: ['manuscript'],
+                        science: ['compendium', 'blueprint']};
+        for (let resource in products) {
+            let over = this.overThreshold(resource);
+            if (over) {
+                try {
+                    var resname = products[resource];
+                    this.game.craft(game.resPool.get(resname).name, 1);
+                }
+                catch (err) {
+                    console.log(`Error crafting ${resname} (${typeof(resname)}): ${err}`);
+                }
+            }
+        }
+        try {
+            let furs = this.game.resPool.get('furs');
+            if (furs.value >= 175 && this.config.resource_management.furs.manage) {
+                this.game.craft(game.resPool.get('parchment').name, 1);
+            }
+        }
+        catch (err) {
+            console.log(this.resources);
+            console.log(`Error checking furs: ${err}`);
+        }
+        let faith = this.game.resPool.get('faith');
+        let faithcap = faith.maxValue * 0.95;
+        if (faith.value >= faithcap) {
+            this.game.religion.praise();
+        }
+    }
+
+    getCap(resource) {
+        let threshold = this.config.resource_management[resource.name].threshold;
+        return threshold == 0 ? 0 : threshold / 100;
+    }
+
+    initPage() {
+        let tab = ['<span> | </span>',
+                   '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
+        let tabRow = $('#gameContainerId').find('div.tabsContainer');
+        tabRow.append($(tab));
+        $('#kitCheats').on('click', () => {
+            this.showCheats();
+        });
+        let css = $(['<style type="text/css">',
+                     '#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; }',
+                     '#custom-handle { ',
+                     'width: 3em; ',
+                     'height: 1.6em; ',
+                     'top: 50%; ',
+                     'margin-top: -.8em; ',
+                     'text-align: center; ',
+                     'line-height: 1.6em; ',
+                     '}',
+                     '.resourcecap { width: 2em;',
+                     'height: 12px; ',
+                     'border: none; ',
+                     '}',
+                     '.cheatcap {',
+                     'width: 36px;',
+                     '}',
+                     '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
+                     '</style>'].join(''));
+        $(document.body).append(css);
     }
 
     loadConfig() {
@@ -223,10 +123,10 @@ class Cheat {
         }
         else {
             this.config = {logLevel: 0, resource_management: {}};
-            for (var resource in this.capless_resources) {
+            for (let resource in this.capless_resources) {
                 this.config.resource_management[this.capless_resources[resource]] = {manage: false};
             }
-            for (var resource in this.managed_resources) {
+            for (let resource in this.managed_resources) {
                 this.config.resource_management[this.managed_resources[resource]] = {manage: false, threshold: 80};
             }
             this.saveConfig();
@@ -234,19 +134,61 @@ class Cheat {
         this.log.debug({config: this.config});
     }
 
+    cheatLoop() {
+        this.game = window.game;
+        let child = $('#kitCheats');
+        if (!child.length) {
+            this.initPage();
+        }
+        let controller = $('#kitCheat');
+        let hunters = this.config.resource_management.hunters.manage;
+        let astro = this.config.resource_management.astronomers.manage;
+        let log = this.config.resource_management.log.manage;
+        this.checkResources();
+        if (hunters && this.game.resPool.get('manpower').value >= 100) {
+            this.game.village.huntAll();
+        }
+        if (astro && this.game.calendar.observeRemainingTime && !game.workshop.get("seti").researched) {
+            this.game.calendar.observeHandler();
+        }
+        if (log) {
+            $('#clearLogHref').click();
+        }
+        window.setTimeout(this.cheatLoop, 200);
+    }
+
+    managing(resource) {
+        if (!this.config.resource_management.hasOwnProperty(resource.name)) {
+            this.config.resource_management[resource.name] = {manage: false, threshold: 80};
+            this.saveConfig();
+        }
+        return this.config.resource_management[resource.name].manage;
+    }
+
+    overThreshold(material) {
+        let resource = this.game.resPool.get(material);
+        let cap = 0;
+        let adj = 0;
+        if (!this.managing(resource)) {
+            return false;
+        }
+        let cap = this.getCap(resource.name);
+        try {
+            adj = resource.maxValue * cap;
+        }
+        catch (err) {
+            console.log(`Error checking cap for ${resource.name}: ${err}`);
+            return false;
+        }
+        if (resource.value >= adj) {
+            return true;
+        }
+        return false
+    }
+
     saveConfig() {
         localStorage.removeItem('kitCheat');
         localStorage.setItem('kitCheat', JSON.stringify(this.config));
-    }
-
-    getResources(game) {
-        var resourcehash;
-        var resources = game.resPool.resources;
-        for (var resourceid in resources) {
-            var resource = game.resPool.resources[resourceid];
-            name = resource.name;
-            this.resources[name] = resource;
-        }
     }
 
     setCap(resource, cap) {
@@ -261,29 +203,75 @@ class Cheat {
         }
     }
 
-    getCraftTables() {
-        var craftTable = $('#fastPraiseContainer').next().find('.res-row.craft');
-        var craftTables = {};
-        for (var idx = 0; idx <= craftTable.length; idx++) {
-            var line = craftTable[idx];
-            var craftlinks = $(line).find('.res-cell.craft-link');
-            var resname = $($(line).children()[0]).text();
-            if (resname == '') {
-                continue;
+    showCheats() {
+        let cheat_contents = ['<div class="bldGroupContainer">'];
+        $('.tab').removeClass('activeTab');
+        $('#kitCheats').addClass('activeTab');
+        for (let idx in this.capless_resources) {
+            let resource = this.capless_resources[idx];
+            if (this.config.resource_management.hasOwnProperty(resource)) {
+                let enabled = this.config.resource_management[resource].manage ? 'on' : 'off';
+                let chtclass = this.config.resource_management[resource].manage ? ' bldEnabled' : '';
+                let label = resource[0].toUpperCase() + resource.slice(1);
+                cheat_contents = cheat_contents.concat([
+                         `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
+                         '<div class="btnContent" title="">',
+                         `<span>${label}</span>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
+                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
+                         '</div></div>']);
             }
-            if (craftlinks.length != 4) {
-                continue;
+        }
+
+        for (let idx in this.managed_resources) {
+            let resource = this.managed_resources[idx];
+            if (this.config.resource_management.hasOwnProperty(resource)) {
+                let enabled = this.config.resource_management[resource].manage ? 'on' : 'off';
+                let chtclass = this.config.resource_management[resource].manage ? ' bldEnabled' : '';
+                let label = resource[0].toUpperCase() + resource.slice(1);
+                let cap = this.config.resource_management[resource].threshold;
+                cheat_contents = cheat_contents.concat([
+                         `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
+                         '<div class="btnContent" title="">',
+                         `<span>${label}</span>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
+                         `<div style="float: right;"><input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" /></div>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
+                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
+                         '</div></div>']);
             }
-            var craft_selectors = {one: craftlinks[0], some: craftlinks[1], many: craftlinks[2], all: craftlinks[3]};
-            craftTables[resname] = craft_selectors;
         }
-        return craftTables;
-    }
- 
-    findRow(resource) {
-        if (this.craftTables.hasOwnProperty(resource)) {
-            return this.craftTables[resource];
-        }
+        cheat_contents.push('</div>');
+        let elm = $(cheat_contents.join(''));
+        let tabContents = $('#gameContainerId').find('div.tabInner');
+        tabContents.html(elm);
+        $('.resourcecap').on('change', ev => {
+            let elm = $(ev.currentTarget);
+            let item = elm.attr('data-resource');
+            let newvalue = parseInt(elm.val());
+            this.setCap(item, newvalue);
+        });
+        $('.cheats').on('click', (ev) => {
+            let elm = $(ev.currentTarget);
+            let item = elm.attr('data-item');
+            let isactive = this.config.resource_management[item];
+            if (isactive.manage) {
+                $('#cht-' + item).removeClass('bldEnabled');
+                isactive.manage = false;
+                this.config.resource_management[item] = isactive;
+                this.saveConfig();
+                elm.html('off')
+            }
+            else {
+                $('#cht-' + item).addClass('bldEnabled');
+                isactive.manage = true;
+                this.config.resource_management[item] = isactive;
+                this.saveConfig();
+                elm.html('on')
+            }
+        });
     }
 }
 
