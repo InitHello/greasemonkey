@@ -1,16 +1,15 @@
 // ==UserScript==
-// @name         Kitcheat
-// @namespace    http://tampermonkey.net/
-// @version      1.0
+// @name         KittenManager
+// @namespace    http://inithello.net/
+// @version      1.1
 // @description  try to take over the world!
 // @author       InitHello
 // @match        http://bloodrizer.ru/games/kittens/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
-// @require      https://code.jquery.com/ui/1.12.1/jquery-ui.min.js#sha256=VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=
 // @grant        none
 // ==/UserScript==
 
-class KittenCheats {
+class KittenManagement {
     constructor() {
         this.log = {
             error: (msg) => {
@@ -85,14 +84,13 @@ class KittenCheats {
 
     initialStartup() {
         let tab = ['<span> | </span>',
-                   '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
+                   '<a href="#" id="KittenManager" class="tab" style="white-space: nowrap;">Tools</a>'].join('');
         let tabRow = $('#gameContainerId').find('div.tabsContainer');
         tabRow.append($(tab));
-        $('#kitCheats').on('click', () => {
-            this.showCheats();
+        $('#KittenManager').on('click', () => {
+            this.showConfig();
         });
         let css = $(['<style type="text/css">',
-                     '#kitCheat { z-index: 99999; position: fixed; top: 7px; left: 180px; }',
                      '#custom-handle { ',
                      'width: 3em; ',
                      'height: 1.6em; ',
@@ -105,17 +103,14 @@ class KittenCheats {
                      'height: 12px; ',
                      'border: none; ',
                      '}',
-                     '.cheatcap {',
-                     'width: 36px;',
-                     '}',
-                     '.cheats { padding-left: 2px; float: right; cursor: pointer; }',
+                     '.management-tools { padding-left: 2px; float: right; cursor: pointer; }',
                      '</style>'].join(''));
         $(document.body).append(css);
     }
 
     loadConfig() {
-        if (localStorage.getItem('kitCheat') !== null) {
-            this.config = JSON.parse(localStorage.getItem('kitCheat'));
+        if (localStorage.getItem('KittenManager') !== null) {
+            this.config = JSON.parse(localStorage.getItem('KittenManager'));
         }
         else {
             this.config = {logLevel: 0, resource_management: {}};
@@ -132,11 +127,11 @@ class KittenCheats {
 
     mainTick(self) {
         self.game = window.game;
-        let child = $('#kitCheats');
+        let child = $('#KittenManager');
         if (!child.length) {
             self.initialStartup();
         }
-        let controller = $('#kitCheat');
+        let controller = $('#KittenManager');
         let hunters = self.config.resource_management.hunters.manage;
         let astro = self.config.resource_management.astronomers.manage;
         let log = self.config.resource_management.log.manage;
@@ -150,7 +145,7 @@ class KittenCheats {
         if (log) {
             $('#clearLogHref').click();
         }
-        window.setTimeout(self.mainTick.bind(null, self), 200);
+        window.setTimeout(self.mainTick.bind(null, self), self.config.heartbeat);
     }
 
     managing(resource) {
@@ -182,8 +177,8 @@ class KittenCheats {
     }
 
     saveConfig() {
-        localStorage.removeItem('kitCheat');
-        localStorage.setItem('kitCheat', JSON.stringify(this.config));
+        localStorage.removeItem('KittenManager');
+        localStorage.setItem('KittenManager', JSON.stringify(this.config));
     }
 
     setCap(resource, cap) {
@@ -198,22 +193,22 @@ class KittenCheats {
         }
     }
 
-    showCheats() {
-        let cheat_contents = ['<div class="bldGroupContainer">'];
+    showConfig() {
+        let tab_contents = ['<div class="bldGroupContainer">'];
         $('.tab').removeClass('activeTab');
-        $('#kitCheats').addClass('activeTab');
+        $('#KittenManager').addClass('activeTab');
         for (let idx in this.capless_resources) {
             let resource = this.capless_resources[idx];
             if (this.config.resource_management.hasOwnProperty(resource)) {
                 let enabled = this.config.resource_management[resource].manage ? 'on' : 'off';
                 let chtclass = this.config.resource_management[resource].manage ? ' bldEnabled' : '';
                 let label = resource[0].toUpperCase() + resource.slice(1);
-                cheat_contents = cheat_contents.concat([
+                tab_contents = tab_contents.concat([
                          `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
                          '<div class="btnContent" title="">',
                          `<span>${label}</span>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
-                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
+                         `<a href="#" class="management-tools" data-item="${resource}" style="" title="Active">${enabled}</a>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
                          '</div></div>']);
             }
@@ -226,20 +221,20 @@ class KittenCheats {
                 let chtclass = this.config.resource_management[resource].manage ? ' bldEnabled' : '';
                 let label = resource[0].toUpperCase() + resource.slice(1);
                 let cap = this.config.resource_management[resource].threshold;
-                cheat_contents = cheat_contents.concat([
+                tab_contents = tab_contents.concat([
                          `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
                          '<div class="btnContent" title="">',
                          `<span>${label}</span>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
                          `<div style="float: right;"><input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" /></div>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
-                         `<a href="#" class="cheats" data-item="${resource}" style="" title="Active">${enabled}</a>`,
+                         `<a href="#" class="management-tools" data-item="${resource}" style="" title="Active">${enabled}</a>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
                          '</div></div>']);
             }
         }
-        cheat_contents.push('</div>');
-        let elm = $(cheat_contents.join(''));
+        tab_contents.push('</div>');
+        let elm = $(tab_contents.join(''));
         let tabContents = $('#gameContainerId').find('div.tabInner');
         tabContents.html(elm);
         $('.resourcecap').on('change', ev => {
@@ -248,7 +243,7 @@ class KittenCheats {
             let newvalue = parseInt(elm.val());
             this.setCap(item, newvalue);
         });
-        $('.cheats').on('click', (ev) => {
+        $('.management-tools').on('click', (ev) => {
             let elm = $(ev.currentTarget);
             let item = elm.attr('data-item');
             let isactive = this.config.resource_management[item];
@@ -276,6 +271,6 @@ let $ = window.jQuery;
 
 $(function() {
     'use strict';
-    const kittenCheats = new KittenCheats();
+    const kittenManagement = new KittenManagement();
 });
 
