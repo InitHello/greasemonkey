@@ -10,26 +10,10 @@
 // @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
 // @grant        none
 // ==/UserScript==
+/* jshint esversion: 6 */
 
 class KittenManagement {
     constructor() {
-        this.log = {
-            error: (msg) => {
-                if (this.config.logLevel >= 1) {
-                    console.log(`ERROR: ${msg}`);
-                }
-            },
-            debug: (msg) => {
-                if (this.config.logLevel >= 2) {
-                    console.log(`DEBUG: ${msg}`);
-                }
-            },
-            info: (msg) => {
-                if (this.config.logLevel >= 3) {
-                    console.log(`INFO: ${msg}`);
-                }
-            }
-        }
         this.resources = {};
         this.capless_resources = ['hunters', 'astronomers', 'log', 'furs']
         this.managed_resources = ['faith', 'science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
@@ -114,7 +98,6 @@ class KittenManagement {
             }
             this.saveConfig();
         }
-        this.log.debug({config: this.config});
     }
 
     mainTick(self) {
