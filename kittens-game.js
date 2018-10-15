@@ -91,18 +91,8 @@ class KittenManagement {
             this.showConfig();
         });
         let css = $(['<style type="text/css">',
-                     '#custom-handle { ',
-                     'width: 3em; ',
-                     'height: 1.6em; ',
-                     'top: 50%; ',
-                     'margin-top: -.8em; ',
-                     'text-align: center; ',
-                     'line-height: 1.6em; ',
-                     '}',
-                     '.resourcecap { width: 2em;',
-                     'height: 12px; ',
-                     'border: none; ',
-                     '}',
+                     '#custom-handle { width: 3em; height: 1.6em; top: 50%; margin-top: -.8em; text-align: center; line-height: 1.6em; }',
+                     '.resourcecap { width: 2em; height: 12px; border: none; }',
                      '.management-tools { padding-left: 2px; float: right; cursor: pointer; }',
                      '</style>'].join(''));
         $(document.body).append(css);
@@ -205,12 +195,10 @@ class KittenManagement {
                 let label = resource[0].toUpperCase() + resource.slice(1);
                 tab_contents = tab_contents.concat([
                          `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
-                         '<div class="btnContent" title="">',
-                         `<span>${label}</span>`,
+                         `<div class="btnContent" title=""><span>${label}</span>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
                          `<a href="#" class="management-tools" data-item="${resource}" style="" title="Active">${enabled}</a>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
-                         '</div></div>']);
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span></div></div>']);
             }
         }
 
@@ -223,14 +211,12 @@ class KittenManagement {
                 let cap = this.config.resource_management[resource].threshold;
                 tab_contents = tab_contents.concat([
                          `<div id="cht-${resource}" class="btn nosel modern${chtclass}" style="position: relative; display: block; margin-left: auto; margin-right: auto;">`,
-                         '<div class="btnContent" title="">',
-                         `<span>${label}</span>`,
+                         `<div class="btnContent" title=""><span>${label}</span>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
                          `<div style="float: right;"><input type="text" id="cap_${resource}" class="resourcecap" data-resource="${resource}" value="${cap}" /></div>`,
                          '<span class="linkBreak" style="float: right; padding-left: 2px; margin-right: 1px;">|</span>',
                          `<a href="#" class="management-tools" data-item="${resource}" style="" title="Active">${enabled}</a>`,
-                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span>',
-                         '</div></div>']);
+                         '<span class="linkBreak" style="float: right; padding-left: 2px;">|</span></div></div>']);
             }
         }
         tab_contents.push('</div>');
