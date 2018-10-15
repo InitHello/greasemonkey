@@ -2,8 +2,10 @@
 // @name         KittenManager
 // @namespace    http://inithello.net/
 // @version      1.1
-// @description  try to take over the world!
+// @description  Manage resources in bloodrizer's kittens game.
 // @author       InitHello
+// @license      CC-BY-NC-SA-4.0
+// @supportURL   https://github.com/InitHello/greasemonkey/issues
 // @match        http://bloodrizer.ru/games/kittens/
 // @require      https://code.jquery.com/jquery-3.3.1.min.js#sha256=FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=
 // @grant        none
