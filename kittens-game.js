@@ -10,17 +10,7 @@
 // @grant        none
 // ==/UserScript==
 
-let $ = window.jQuery;
-
-$(function() {
-    'use strict';
-
-    var cheat = new Cheat();
-
-    window.setTimeout(cheat.cheatLoop, 2500);
-});
-
-class Cheat {
+class KittenCheats {
     constructor() {
         this.log = {
             error: (msg) => {
@@ -43,6 +33,7 @@ class Cheat {
         this.capless_resources = ['hunters', 'astronomers', 'log', 'furs']
         this.managed_resources = ['faith', 'science', 'culture', 'catnip', 'wood', 'minerals', 'coal', 'iron'];
         this.loadConfig();
+        window.setTimeout(this.mainTick.bind(null, this), 2500);
     }
 
     checkResources() {
@@ -72,7 +63,6 @@ class Cheat {
             }
         }
         catch (err) {
-            console.log(this.resources);
             console.log(`Error checking furs: ${err}`);
         }
         let faith = this.game.resPool.get('faith');
@@ -83,11 +73,17 @@ class Cheat {
     }
 
     getCap(resource) {
-        let threshold = this.config.resource_management[resource.name].threshold;
+        let threshold = 1000;
+        try {
+            threshold = this.config.resource_management[resource.name].threshold;
+        }
+        catch (err) {
+            console.log(`Error getting cap for ${resource}: ${err}`);
+        }
         return threshold == 0 ? 0 : threshold / 100;
     }
 
-    initPage() {
+    initialStartup() {
         let tab = ['<span> | </span>',
                    '<a href="#" id="kitCheats" class="tab" style="white-space: nowrap;">Cheats</a>'].join('');
         let tabRow = $('#gameContainerId').find('div.tabsContainer');
@@ -134,27 +130,27 @@ class Cheat {
         this.log.debug({config: this.config});
     }
 
-    cheatLoop() {
-        this.game = window.game;
+    mainTick(self) {
+        self.game = window.game;
         let child = $('#kitCheats');
         if (!child.length) {
-            this.initPage();
+            self.initialStartup();
         }
         let controller = $('#kitCheat');
-        let hunters = this.config.resource_management.hunters.manage;
-        let astro = this.config.resource_management.astronomers.manage;
-        let log = this.config.resource_management.log.manage;
-        this.checkResources();
-        if (hunters && this.game.resPool.get('manpower').value >= 100) {
-            this.game.village.huntAll();
+        let hunters = self.config.resource_management.hunters.manage;
+        let astro = self.config.resource_management.astronomers.manage;
+        let log = self.config.resource_management.log.manage;
+        self.checkResources();
+        if (hunters && self.game.resPool.get('manpower').value >= 100) {
+            self.game.village.huntAll();
         }
-        if (astro && this.game.calendar.observeRemainingTime && !game.workshop.get("seti").researched) {
-            this.game.calendar.observeHandler();
+        if (astro && self.game.calendar.observeRemainingTime && !game.workshop.get("seti").researched) {
+            self.game.calendar.observeHandler();
         }
         if (log) {
             $('#clearLogHref').click();
         }
-        window.setTimeout(this.cheatLoop, 200);
+        window.setTimeout(self.mainTick.bind(null, self), 200);
     }
 
     managing(resource) {
@@ -167,12 +163,11 @@ class Cheat {
 
     overThreshold(material) {
         let resource = this.game.resPool.get(material);
-        let cap = 0;
         let adj = 0;
         if (!this.managing(resource)) {
             return false;
         }
-        let cap = this.getCap(resource.name);
+        let cap = this.getCap(resource);
         try {
             adj = resource.maxValue * cap;
         }
@@ -274,4 +269,13 @@ class Cheat {
         });
     }
 }
+
+
+let $ = window.jQuery;
+
+
+$(function() {
+    'use strict';
+    const kittenCheats = new KittenCheats();
+});
 
